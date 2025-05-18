@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>貪吃蛇遊戲</title>
+  <style>
+    body {
+      background: #222;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+      justify-content: center;
+    }
+    canvas {
+      background: #000;
+      border: 2px solid #0f0;
+      display: block;
+      margin-bottom: 10px;
+    }
+    #score {
+      font-size: 24px;
+      font-weight: bold;
+      color: #0f0;
+      margin-bottom: 10px;
+    }
+    #controls {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      color: #eee;
+    }
+    label {
+      user-select: none;
+    }
+    input[type="range"] {
+      cursor: pointer;
+    }
+    button {
+      background-color: #0f0;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      color: #000;
+      cursor: pointer;
+      border-radius: 4px;
+      user-select: none;
+    }
+    button:hover {
+      background-color: #0c0;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">分數: 0</div>
+  <canvas id="game" width="400" height="400"></canvas>
+
+  <div id="controls">
+    <label for="speedRange">難度（1~10）: <span id="speedValue">5</span></label>
+    <input type="range" id="speedRange" min="1" max="10" value="5" step="1" />
+    <button id="restartBtn">重新開始</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const box = 20;
+    const canvasSize = 400;
+    const rowCount = canvasSize / box;
+
+    let snake = [];
+    let food;
+    let score;
+    let d;
+    let game;
+    let difficulty = 5;
+
+    const scoreDisplay = document.getElementById('score');
+    const speedRange = document.getElementById('speedRange');
+    const speedValue = document.getElementById('speedValue');
+    const restartBtn = document.getElementById('restartBtn');
+
+    function getIntervalByDifficulty(diff) {
+      return 300 - (diff * 25); // 1 => 275ms (慢), 10 => 50ms (快)
+    }
+
+    function init() {
+      snake = [{ x: 10 * box, y: 10 * box }];
+      placeFood();
+      score = 0;
+      d = null;
+      scoreDisplay.textContent = "分數: " + score;
+      difficulty = parseInt(speedRange.value);
+      speedValue.textContent = difficulty;
+
+      if (game) clearInterval(game);
+      game = setInterval(draw, getIntervalByDifficulty(difficulty));
+    }
+
+    function placeFood() {
+      food = {
+        x: Math.floor(Math.random() * rowCount) * box,
+        y: Math.floor(Math.random() * rowCount) * box
+      };
+      while (snake.some(s => s.x === food.x && s.y === food.y)) {
+        food.x = Math.floor(Math.random() * rowCount) * box;
+        food.y = Math.floor(Math.random() * rowCount) * box;
+      }
+    }
+
+    document.addEventListener('keydown', direction);
+    speedRange.addEventListener('input', () => {
+      difficulty = parseInt(speedRange.value);
+      speedValue.textContent = difficulty;
+      clearInterval(game);
+      game = setInterval(draw, getIntervalByDifficulty(difficulty));
+    });
+
+    restartBtn.addEventListener('click', init);
+
+    function direction(event) {
+      if(event.key === "ArrowLeft" && d !== "RIGHT"){
+        d = "LEFT";
+      } else if(event.key === "ArrowUp" && d !== "DOWN"){
+        d = "UP";
+      } else if(event.key === "ArrowRight" && d !== "LEFT"){
+        d = "RIGHT";
+      } else if(event.key === "ArrowDown" && d !== "UP"){
+        d = "DOWN";
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#f00";
+      ctx.fillRect(food.x, food.y, box, box);
+
+      let snakeX = snake[0].x;
+      let snakeY = snake[0].y;
+
+      if(d === "LEFT") snakeX -= box;
+      else if(d === "UP") snakeY -= box;
+      else if(d === "RIGHT") snakeX += box;
+      else if(d === "DOWN") snakeY += box;
+
+      if(snakeX < 0 || snakeX >= canvasSize || snakeY < 0 || snakeY >= canvasSize) {
+        clearInterval(game);
+        alert("碰到牆壁，遊戲結束！你的分數是：" + score);
+        return;
+      }
+
+      let newHead = { x: snakeX, y: snakeY };
+
+      if(snakeX === food.x && snakeY === food.y) {
+        score++;
+        scoreDisplay.textContent = "分數: " + score;
+        placeFood();
+      } else {
+        snake.pop();
+      }
+      for (let i = 1; i < snake.length; i++)
+	 {
+  		if (newHead.x === snake[i].x && newHead.y === snake[i].y) 
+		{
+    			clearInterval(game);
+    			alert("撞到自己，遊戲結束！你的分數是：" + score);
+    			return;
+  		}
+	}
+      
+      snake.unshift(newHead);
+
+      for(let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = (i === 0) ? "#0f0" : "#0a0";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeStyle = "#030";
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
